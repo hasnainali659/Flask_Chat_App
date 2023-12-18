@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h2>Chat</h2>
+    <div id="messages">
+        {% for chat in chats %}
+            <p><strong>{{ chat.user.username }}:</strong> {{ chat.content }}</p>
+        {% endfor %}
+    </div>
+    <form id="messageForm">
+        <input type="text" id="message">
+        <input type="submit" value="Send">
+    </form>
+    <script>
+        var socket = io.connect('http://localhost:5000/');
+        var username = "{{ username }}";
+        
+        socket.on('message', function(data) {
+            $('#messages').append($('<p>').text(data.user + ': ' + data.message));
+        });
+        $('#messageForm').submit(function(e) {
+            e.preventDefault();
+            socket.emit('message', {message: $('#message').val(), 'username': username});
+            $('#message').val('');
+            return false;
+        });
+    </script>
+</body>
+</html>

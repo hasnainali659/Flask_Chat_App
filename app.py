@@ -10,10 +10,13 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 import os
+import copy
 
 load_dotenv()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+session_copy = None
 
 app = Flask(__name__)
 CORS(app)
@@ -36,6 +39,7 @@ class User(db.Model):
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
+    response = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @app.route('/')
@@ -67,16 +71,23 @@ def register():
 
 @app.route('/chat', methods=['GET'])
 def chat():
+    global session_copy
+    
     if 'username' not in session:
         return redirect(url_for('login'))
     user = User.query.filter_by(username=session['username']).first()
     chats = Chat.query.filter_by(user=user).all()
+
+    session_copy = copy.deepcopy(session)
+
     return render_template('chat.html', chats=chats, username=session['username'])
 
 @socketio.on('message')
 def handle_message(data):
+    
     user = User.query.filter_by(username=data['username']).first()
     chat = Chat(content=data['message'], user=user)
+    
     db.session.add(chat)
     db.session.commit()
 
@@ -88,9 +99,15 @@ def handle_message(data):
     chatbot = LLMChain(llm=llm, prompt=prompt, memory=memory)
     response = chatbot({"query": query})
     response = response['text']
+    
+    chat = Chat(content=data['message'], response=response, user=user)
+    
     db.session.add(chat)
     db.session.commit()
-    socketio.emit('message', {'user': 'Assistant', 'message': response})
+    
+    # emit response to appropriate user
+    socketio.emit('message', {'user': 'Assistant', 'message': response}, room=request.sid)
+    # socketio.emit('message', {'user': 'Assistant', 'message': response})
 
 if __name__ == '__main__':
     # app.run(debug=True)

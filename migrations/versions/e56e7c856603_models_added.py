@@ -1,8 +1,8 @@
 """models added
 
-Revision ID: 1cfdd3d4df67
+Revision ID: e56e7c856603
 Revises: 
-Create Date: 2023-12-17 12:00:04.732739
+Create Date: 2023-12-19 16:37:55.240405
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1cfdd3d4df67'
+revision = 'e56e7c856603'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -28,6 +28,7 @@ def upgrade():
     op.create_table('chat',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('response', sa.Text(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
